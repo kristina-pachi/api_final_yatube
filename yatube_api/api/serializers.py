@@ -4,7 +4,7 @@ from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField, PrimaryKeyRelatedField
 from django.core.files.base import ContentFile
 
-from posts.models import Comment, Post, Group, Follow
+from posts.models import Comment, Post, Group, Follow, User
 
 
 class Base64ImageField(serializers.ImageField):
@@ -19,7 +19,10 @@ class Base64ImageField(serializers.ImageField):
 
 class PostSerializer(serializers.ModelSerializer):
     author = SlugRelatedField(slug_field='username', read_only=True)
-    group = PrimaryKeyRelatedField(read_only=True)
+    group = PrimaryKeyRelatedField(
+        queryset=Group.objects.all(),
+        required=False
+    )
     image = Base64ImageField(required=False, allow_null=True)
 
     class Meta:
@@ -45,19 +48,19 @@ class GroupSerializer(serializers.ModelSerializer):
 
 
 class FollowSerializer(serializers.ModelSerializer):
-    user = SlugRelatedField(
-        read_only=True,
+    user = serializers.SlugRelatedField(
+        queryset=User.objects.all(),
         slug_field='username',
         default=serializers.CurrentUserDefault()
     )
-    following = SlugRelatedField(
+    following = serializers.SlugRelatedField(
         required=True,
         slug_field='username',
-        queryset=Follow.objects.all()
+        queryset=User.objects.all()
     )
 
     class Meta:
-        fields = '__all__'
+        fields = ('user', 'following')
         model = Follow
 
     def validate(self, data):
